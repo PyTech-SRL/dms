@@ -40,13 +40,12 @@ class Storage(models.Model):
         default=False,
         help="Indicates if directories and files are hidden by default.",
     )
-    root_directory_ids = fields.One2many(
+    root_directory_ids = fields.Many2many(
         comodel_name="dms.directory",
-        inverse_name="storage_id",
+        compute="_compute_root_directory_ids",
         string="Root Directories",
-        auto_join=False,
         readonly=False,
-        copy=False,
+        store=True,
     )
     storage_directory_ids = fields.One2many(
         comodel_name="dms.directory",
@@ -114,6 +113,13 @@ class Storage(models.Model):
         self.env.user.company_id.set_onboarding_step_done(
             "documents_onboarding_storage_state"
         )
+
+    @api.depends("storage_directory_ids.is_root_directory")
+    def _compute_root_directory_ids(self):
+        for storage in self:
+            storage.root_directory_ids = storage.storage_directory_ids.filtered(
+                "is_root_directory"
+            )
 
     # Read, View
     @api.depends("storage_directory_ids")
